@@ -9,17 +9,8 @@ namespace Norm.Database.Contexts
 {
     public class NormDbContext : DbContext
     {
-        public NormDbContext(IOptions<BotOptions> options, ILoggerFactory factory)
+        public NormDbContext(DbContextOptions options) : base(options)
         {
-            this.dbConnectionString = options.Value.Database.AsNpgsqlConnectionString();
-            this.loggerFactory = factory;
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder
-                .UseNpgsql(this.dbConnectionString, o => o.UseNodaTime())
-                .UseLoggerFactory(this.loggerFactory);
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -31,7 +22,7 @@ namespace Norm.Database.Contexts
         public DbContext Context => this;
 
         private readonly string dbConnectionString;
-        public ILoggerFactory loggerFactory;
+        public ILoggerFactory loggerFactory;        
 
         // Novel Tables
         public DbSet<NovelInfo> AllNovelInfo { get; private set; }

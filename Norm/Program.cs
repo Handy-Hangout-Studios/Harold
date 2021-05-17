@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using Microsoft.EntityFrameworkCore;
+using Hangfire;
 using Hangfire.PostgreSql;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -11,9 +12,11 @@ using Norm.Configuration;
 using Norm.Database.Contexts;
 using Norm.Database.TypeHandlers;
 using Norm.Services;
+using Npgsql;
 using Serilog;
 using Serilog.Formatting.Json;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace Norm
 {
@@ -102,11 +105,19 @@ namespace Norm
                 .Bind(context.Configuration.GetSection(BotOptions.Section))
                 .ValidateDataAnnotations();
 
+            services.AddDbContext<NormDbContext>((servs, opts) =>
+            {
+                var botOptions = servs.GetRequiredService<IOptions<BotOptions>>().Value;
+                var logFactory = servs.GetRequiredService<ILoggerFactory>();
+
+                opts.UseNpgsql(botOptions.Database.AsNpgsqlConnectionString(), o => o.UseNodaTime())
+                    .UseLoggerFactory(logFactory);
+            });
+
             services
                 .AddSingleton<IClock>((p) => SystemClock.Instance)
                 .AddSingleton<IDateTimeZoneSource>((p) => TzdbDateTimeZoneSource.Default)
                 .AddSingleton<IDateTimeZoneProvider, DateTimeZoneCache>()
-                .AddScoped<NormDbContext>()
                 .AddSingleton<LatexRenderService>()
                 .AddSingleton<IBotService, BotService>()
                 .AddTransient<AnnouncementService>()
